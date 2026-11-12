@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voli Nusantara 2D - Mabar & Bot</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PeerJS untuk Mabar Online P2P -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+    <!-- Google Font Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            touch-action: none;
+            user-select: none;
+            overflow: hidden;
+            background-color: #030712;
+        }
+        .font-game {
+            font-family: 'Press Start 2P', monospace;
+        }
+        .btn-arcade {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-arcade:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+        .btn-arcade:active {
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative flex items-center justify-center">
+
+    <!-- OVERLAY UTAMA / MENU / LOBBY -->
+    <div id="lobby-overlay" class="absolute inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 p-4 sm:p-6 overflow-y-auto">
+        <div class="w-full max-w-2xl bg-slate-900/90 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
+            
+            <div class="text-center space-y-2">
+                <span class="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[11px] font-extrabold uppercase tracking-widest">
+                    🏐 Game Voli Pantai Nusantara
+                </span>
+                <h1 class="font-game text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-rose-400 to-pink-500">
+                    VOLI NUSANTARA 2D
+                </h1>
+                <p class="text-xs sm:text-sm text-slate-300 max-w-md mx-auto">
+                    Main seru bersama teman atau uji kehebatanmu melawan AI Bot dengan kustomisasi kepala karakter super lengkap!
+                </p>
+            </div>
+
+            <!-- TAHAP 1: PILIHAN MODE UTAMA (MABAR / BOT) -->
+            <div id="menu-view-main" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button type="button" onclick="window.switchMenuMode('MABAR')" class="btn-arcade group relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 p-6 text-left border border-rose-300/30">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="px-2.5 py-0.5 rounded-lg bg-black/25 text-white text-[11px] font-bold">PVP • 2 PEMAIN</span>
+                            <span class="text-3xl">🤝</span>
+                        </div>
+                        <h3 class="font-game text-2xl sm:text-3xl font-bold text-white">MABAR</h3>
+                        <p class="text-rose-100 text-xs sm:text-sm mt-1 leading-relaxed">
+                            Main bareng teman! Pilih <b>Lokal (1 Layar)</b> atau <b>Online Room (P2P)</b>.
+                        </p>
+                    </button>
+
+                    <button type="button" onclick="window.switchMenuMode('BOT')" class="btn-arcade group relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 p-6 text-left border border-sky-300/30">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="px-2.5 py-0.5 rounded-lg bg-black/25 text-white text-[11px] font-bold">SOLO VS AI</span>
+                            <span class="text-3xl">🤖</span>
+                        </div>
+                        <h3 class="font-game text-2xl sm:text-3xl font-bold text-white">LAWAN BOT</h3>
+                        <p class="text-sky-100 text-xs sm:text-sm mt-1 leading-relaxed">
+                            Lawan AI dengan pilihan tingkat kesulitan <b>Easy, Medium, Hard</b>.
+                        </p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAHAP 2A: SUB-MENU MABAR (LOKAL / ROOM) -->
+            <div id="menu-view-mabar" class="hidden space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                    <button type="button" onclick="window.backToMainMenu()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition">
+                        ◀ Kembali
+                    </button>
+                    <span class="text-xs font-extrabold text-rose-400 uppercase tracking-widest">Pilih Mode Mabar</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button type="button" onclick="window.openLobby('LOCAL')" class="btn-arcade rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-5 text-left border border-emerald-300/30">
+                        <div class="text-2xl mb-1">📱</div>
+                        <h4 class="font-game text-xl font-bold text-white">Mabar Lokal (1 Layar)</h4>
+                        <p class="text-emerald-100 text-xs mt-1">Main berdua dalam satu perangkat HP atau Laptop.</p>
+                    </button>
+                    <button type="button" onclick="window.openLobby('ONLINE')" class="btn-arcade rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 p-5 text-left border border-violet-300/30">
+                        <div class="text-2xl mb-1">🌐</div>
+                        <h4 class="font-game text-xl font-bold text-white">Mabar Online Room</h4>
+                        <p class="text-violet-100 text-xs mt-1">Main jarak jauh via PeerJS menggunakan kode room.</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAHAP 2B: SUB-MENU BOT (EASY / MEDIUM / HARD) -->
+            <div id="menu-view-bot" class="hidden space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                    <button type="button" onclick="window.backToMainMenu()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition">
+                        ◀ Kembali
+                    </button>
+                    <span class="text-xs font-extrabold text-sky-400 uppercase tracking-widest">Pilih Tingkat Kesulitan Bot</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button type="button" onclick="window.startBotGame('EASY')" class="btn-arcade rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 p-4 text-center border border-emerald-300/30">
+                        <span class="text-2xl">🌱</span>
+                        <h4 class="font-game text-lg font-bold text-white mt-1">EASY</h4>
+                        <p class="text-emerald-100 text-[11px] mt-0.5">Santai & lambat</p>
+                    </button>
+                    <button type="button" onclick="window.startBotGame('MEDIUM')" class="btn-arcade rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-4 text-center border border-amber-300/30">
+                        <span class="text-2xl">⚡</span>
+                        <h4 class="font-game text-lg font-bold text-white mt-1">MEDIUM</h4>
+                        <p class="text-amber-100 text-[11px] mt-0.5">Tantangan seimbang</p>
+                    </button>
+                    <button type="button" onclick="window.startBotGame('HARD')" class="btn-arcade rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 p-4 text-center border border-rose-300/30">
+                        <span class="text-2xl">🔥</span>
+                        <h4 class="font-game text-lg font-bold text-white mt-1">HARD</h4>
+                        <p class="text-rose-100 text-[11px] mt-0.5">Sangat agresif & gesit</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAHAP 3: LOBBY KUSTOMISASI KARAKTER -->
+            <div id="menu-view-lobby" class="hidden space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                    <button type="button" onclick="window.backToMenuMode()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition">
+                        ◀ Kembali
+                    </button>
+                    <span id="lobby-title-badge" class="text-xs font-extrabold text-amber-400 uppercase tracking-widest">Kustomisasi Pemain</span>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="button" id="tab-custom-p1" onclick="window.setActiveCustomPlayer(1)" class="flex-1 py-2 px-4 rounded-xl bg-rose-600 text-xs font-bold text-white transition shadow">
+                        👤 Atribut Pemain 1
+                    </button>
+                    <button type="button" id="tab-custom-p2" onclick="window.setActiveCustomPlayer(2)" class="flex-1 py-2 px-4 rounded-xl bg-slate-800 text-xs font-bold text-slate-400 transition shadow">
+                        👤 Atribut Pemain 2
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-slate-950/40 p-4 rounded-2xl border border-slate-800">
+                    <div class="sm:col-span-5 flex flex-col items-center justify-center bg-gradient-to-b from-sky-400/10 to-amber-400/10 border border-slate-700/80 rounded-2xl p-3">
+                        <canvas id="previewCanvas" width="180" height="180" class="w-32 h-32 sm:w-40 sm:h-40 rounded-xl bg-slate-900/50"></canvas>
+                        <button type="button" onclick="window.randomizeAppearance()" class="mt-2 px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-amber-300 border border-slate-700 transition">
+                            🎲 Acak Gaya Karakter
+                        </button>
+                    </div>
+
+                    <div class="sm:col-span-7 space-y-2.5 text-xs">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-300 mb-1">Warna Kulit</label>
+                            <div id="skin-swatches" class="flex flex-wrap gap-1.5"></div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-300 mb-0.5">Gaya Rambut</label>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="window.cycleOption('hair', -1)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold">◀</button>
+                                <div id="label-hair" class="flex-1 text-center py-1.5 px-2 rounded-lg bg-slate-950 border border-slate-800 font-bold text-white truncate">Jambul</div>
+                                <button type="button" onclick="window.cycleOption('hair', 1)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold">▶</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-300 mb-0.5">Ekspresi Wajah</label>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="window.cycleOption('face', -1)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold">◀</button>
+                                <div id="label-face" class="flex-1 text-center py-1.5 px-2 rounded-lg bg-slate-950 border border-slate-800 font-bold text-white truncate">Semangat</div>
+                                <button type="button" onclick="window.cycleOption('face', 1)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold">▶</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-300 mb-0.5">Aksesoris Wajah</label>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="window.cycleOption('acc', -1)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold">◀</button>
+                                <div id="label-acc" class="flex-1 text-center py-1.5 px-2 rounded-lg bg-slate-950 border border-slate-800 font-bold text-white truncate">Kacamata Hitam</div>
+                                <button type="button" onclick="window.cycleOption('acc', 1)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold">▶</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-300 mb-0.5">Aksesoris Kepala / Topi</label>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="window.cycleOption('hat', -1)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold">◀</button>
+                                <div id="label-hat" class="flex-1 text-center py-1.5 px-2 rounded-lg bg-slate-950 border border-slate-800 font-bold text-white truncate">Tanpa Topi</div>
+                                <button type="button" onclick="window.cycleOption('hat', 1)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold">▶</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="online-room-section" class="hidden space-y-3 bg-slate-950/60 p-4 rounded-2xl border border-violet-900/40">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-violet-300">🌐 PeerJS Room Multiplayer</span>
+                        <span id="peer-status" class="text-[11px] text-amber-400 font-bold">Menghubungkan ke server...</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <button type="button" onclick="window.hostOnlineRoom()" class="w-full py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 font-bold text-xs text-white transition shadow">
+                                🏠 Buat Room Baru (Host)
+                            </button>
+                            <div id="my-room-code-box" class="hidden text-center py-1.5 bg-violet-950/60 rounded-lg border border-violet-800/60">
+                                <span class="text-[11px] text-slate-300">Kode Room Kamu:</span>
+                                <span id="display-room-code" class="font-game text-sm font-black text-amber-300 ml-1">------</span>
+                            </div>
+                        </div>
+                        <div class="space-y-1 flex flex-col justify-between">
+                            <div class="flex gap-1.5">
+                                <input type="text" id="input-room-code" placeholder="KODE ROOM" class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold uppercase text-center tracking-wider text-white focus:outline-none focus:border-violet-500">
+                                <button type="button" onclick="window.joinOnlineRoom()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 font-bold text-xs text-white transition shadow">
+                                    Gabung
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" onclick="window.startLobbyGame()" class="btn-arcade w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-rose-500 to-pink-600 font-game text-lg font-black text-white shadow-xl border border-amber-300/40">
+                    🏐 MULAI PERTANDINGAN SEKARANG 🏐
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ARENA GAME (KANVAS UTAMA) -->
+    <div id="game-container" class="relative w-full h-full flex flex-col items-center justify-center">
+        <div class="absolute top-4 z-20 flex items-center gap-4 sm:gap-12 px-6 py-2 rounded-2xl bg-slate-900/85 backdrop-blur-md border border-slate-700/80 shadow-xl">
+            <div class="text-center">
+                <div class="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Pemain 1</div>
+                <div id="score-p1" class="font-game text-2xl sm:text-4xl font-black text-white">0</div>
+            </div>
+            <div class="font-game text-lg sm:text-2xl font-bold text-slate-500">VS</div>
+            <div class="text-center">
+                <div class="text-[10px] font-bold text-sky-400 uppercase tracking-widest" id="label-p2-score">Pemain 2</div>
+                <div id="score-p2" class="font-game text-2xl sm:text-4xl font-black text-white">0</div>
+            </div>
+            <button type="button" onclick="window.togglePause(true)" class="ml-4 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 border border-slate-700 transition">
+                ⏸️ Menu
+            </button>
+        </div>
+
+        <canvas id="gameCanvas" class="w-full h-full block bg-sky-950"></canvas>
+
+        <!-- TOMBOL KONTROL MOBILE LENGKAP -->
+        <div id="touch-controls" class="absolute bottom-4 inset-x-4 z-20 flex justify-between pointer-events-none sm:hidden">
+            <div class="flex gap-2 pointer-events-auto">
+                <button type="button" ontouchstart="window.touchDown('left')" ontouchend="window.touchUp('left')" onmousedown="window.touchDown('left')" onmouseup="window.touchUp('left')" class="w-14 h-14 rounded-2xl bg-slate-800/85 border border-slate-600 text-white font-bold text-xl active:bg-slate-700">◀</button>
+                <button type="button" ontouchstart="window.touchDown('right')" ontouchend="window.touchUp('right')" onmousedown="window.touchDown('right')" onmouseup="window.touchUp('right')" class="w-14 h-14 rounded-2xl bg-slate-800/85 border border-slate-600 text-white font-bold text-xl active:bg-slate-700">▶</button>
+            </div>
+            <div class="flex gap-2 pointer-events-auto">
+                <button type="button" ontouchstart="window.touchDown('drop')" ontouchend="window.touchUp('drop')" onmousedown="window.touchDown('drop')" onmouseup="window.touchUp('drop')" class="w-14 h-14 rounded-2xl bg-cyan-600/85 border border-cyan-400 text-white font-bold text-xs active:bg-cyan-500" title="Serangan Bawah">🥎</button>
+                <button type="button" ontouchstart="window.touchDown('defense')" ontouchend="window.touchUp('defense')" onmousedown="window.touchDown('defense')" onmouseup="window.touchUp('defense')" class="w-14 h-14 rounded-2xl bg-indigo-600/85 border border-indigo-400 text-white font-bold text-xs active:bg-indigo-500" title="Defense / Dive">🛡️</button>
+                <button type="button" ontouchstart="window.touchDown('smash')" ontouchend="window.touchUp('smash')" onmousedown="window.touchDown('smash')" onmouseup="window.touchUp('smash')" class="w-14 h-14 rounded-2xl bg-amber-600/85 border border-amber-400 text-white font-bold text-xs active:bg-amber-500" title="Smash">⚡</button>
+                <button type="button" ontouchstart="window.touchDown('jump')" ontouchend="window.touchUp('jump')" onmousedown="window.touchDown('jump')" onmouseup="window.touchUp('jump')" class="w-14 h-14 rounded-2xl bg-rose-600/85 border border-rose-400 text-white font-bold text-xl active:bg-rose-500" title="Loncat">▲</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OVERLAY PAUSE -->
+    <div id="pause-overlay" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+        <div class="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
+            <span class="text-3xl">⏸️</span>
+            <h2 class="font-game text-2xl font-black text-amber-400">PERTANDINGAN DIJEDA</h2>
+            <p class="text-xs text-slate-300">Mau lanjut main atau kembali ke menu utama?</p>
+            <div class="space-y-2.5 pt-2">
+                <button type="button" onclick="window.togglePause(false)" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-sm text-white transition shadow">
+                    ▶️ Lanjut Main (Resume)
+                </button>
+                <button type="button" onclick="window.restartMatch()" class="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 font-bold text-sm text-white transition shadow">
+                    🔄 Ulangi Pertandingan
+                </button>
+                <button type="button" onclick="window.returnToLobby()" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-sm text-slate-300 transition shadow">
+                    🏠 Kembali ke Menu Utama
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OVERLAY GAME OVER -->
+    <div id="gameover-overlay" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+        <div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
+            <span class="text-4xl">🏆</span>
+            <h2 id="gameover-title" class="font-game text-3xl font-black text-amber-400">PEMAIN 1 MENANG!</h2>
+            <p id="gameover-desc" class="text-sm text-slate-300">Pertandingan voli yang sangat seru dan menegangkan.</p>
+            <div class="flex gap-3 pt-2">
+                <button type="button" onclick="window.restartMatch()" class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-sm text-white transition shadow">
+                    🔄 Main Lagi
+                </button>
+                <button type="button" onclick="window.returnToLobby()" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-sm text-slate-300 transition shadow">
+                    🏠 Menu Utama
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT UTAMA GAME -->
+    <script>
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        function playTone(freq, type = 'sine', duration = 0.1, vol = 0.15) {
+            try {
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function emitOnlineSfx(type) {
+            initAudio();
+            if (type === 'jump') playTone(320, 'sine', 0.1, 0.1);
+            else if (type === 'hit') playTone(540, 'triangle', 0.08, 0.15);
+            else if (type === 'smash') playTone(780, 'sawtooth', 0.15, 0.2);
+            else if (type === 'score') { playTone(400, 'sine', 0.1, 0.15); setTimeout(() => playTone(600, 'sine', 0.2, 0.15), 100); }
+            else if (type === 'win') { [300, 450, 600, 750].forEach((f, i) => setTimeout(() => playTone(f, 'triangle', 0.2, 0.2), i * 120)); }
+        }
+
+        const SKIN_TONES = [
+            { name: 'Sawo Matang', fill: '#d99b66', stroke: '#9a6336' },
+            { name: 'Kuning Langsat', fill: '#f3c69f', stroke: '#b5835a' },
+            { name: 'Cokelat Eksotis', fill: '#9c623e', stroke: '#63391f' },
+            { name: 'Putih Cerah', fill: '#fde0c8', stroke: '#c29b7e' },
+            { name: 'Gelap Manis', fill: '#6b4228', stroke: '#3d2211' },
+            { name: 'Cyborg Biru', fill: '#7dd3fc', stroke: '#0369a1' }
+        ];
+
+        const HAIR_STYLES = [
+            { id: 'spiky', label: 'Jambul Spiky', color: '#1e293b' },
+            { id: 'parted', label: 'Belah Tengah', color: '#0f172a' },
+            { id: 'afro', label: 'Kribo Nusantara', color: '#18181b' },
+            { id: 'ponytail', label: 'Kuncir Belakang', color: '#3f2e21' },
+            { id: 'mohawk', label: 'Mohawk Punk', color: '#e11d48' },
+            { id: 'bald', label: 'Botak Plontos', color: '#1e293b' }
+        ];
+
+        const FACE_EXPRESSIONS = [
+            { id: 'happy', label: 'Senang Ceria' },
+            { id: 'fierce', label: 'Semangat Garang' },
+            { id: 'chill', label: 'Cool Santai' },
+            { id: 'shocked', label: 'Kaget Melotot' }
+        ];
+
+        const FACE_ACCESSORIES = [
+            { id: 'none', label: 'Polos' },
+            { id: 'shades', label: 'Kacamata Hitam' },
+            { id: 'glasses', label: 'Kacamata Kutu Buku' },
+            { id: 'bandaid', label: 'Plester Pipi' },
+            { id: 'mustache', label: 'Kumis Tebal' },
+            { id: 'mask', label: 'Masker Ninja' },
+            { id: 'facepaint', label: 'Cat Wajah Atlet' }
+        ];
+
+        const HEAD_ACCESSORIES = [
+            { id: 'none', label: 'Tanpa Topi' },
+            { id: 'cap', label: 'Topi Terbalik' },
+            { id: 'headband', label: 'Ikat Kepala Atlet' },
+            { id: 'crown', label: 'Mahkota Juara' },
+            { id: 'bandana', label: 'Bandana Bajak Laut' }
+        ];
+
+        let appearanceP1 = { skin: 0, hair: 0, face: 0, acc: 1, hat: 1 };
+        let appearanceP2 = { skin: 1, hair: 2, face: 1, acc: 0, hat: 2 };
+        let activeCustomTarget = 1;
+
+        const skinContainer = document.getElementById('skin-swatches');
+        SKIN_TONES.forEach((s, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'w-7 h-7 rounded-full border-2 border-slate-600 transition transform hover:scale-110';
+            btn.style.backgroundColor = s.fill;
+            btn.title = s.name;
+            btn.onclick = () => {
+                const targetApp = activeCustomTarget === 1 ? appearanceP1 : appearanceP2;
+                targetApp.skin = idx;
+                syncAppearanceToPlayers();
+                updateCustomizationLabels();
+                playTone(500, 'sine', 0.05, 0.1);
+            };
+            skinContainer.appendChild(btn);
+        });
+
+        function setActiveCustomPlayer(pNum) {
+            activeCustomTarget = pNum;
+            const btn1 = document.getElementById('tab-custom-p1');
+            const btn2 = document.getElementById('tab-custom-p2');
+            if (pNum === 1) {
+                btn1.className = 'flex-1 py-2 px-4 rounded-xl bg-rose-600 text-xs font-bold text-white transition shadow';
+                btn2.className = 'flex-1 py-2 px-4 rounded-xl bg-slate-800 text-xs font-bold text-slate-400 transition shadow';
+            } else {
+                btn2.className = 'flex-1 py-2 px-4 rounded-xl bg-sky-600 text-xs font-bold text-white transition shadow';
+                btn1.className = 'flex-1 py-2 px-4 rounded-xl bg-slate-800 text-xs font-bold text-slate-400 transition shadow';
+            }
+            updateCustomizationLabels();
+        }
+        window.setActiveCustomPlayer = setActiveCustomPlayer;
+
+        function cycleOption(category, dir) {
+            const targetApp = activeCustomTarget === 1 ? appearanceP1 : appearanceP2;
+            if (category === 'hair') {
+                targetApp.hair = (targetApp.hair + dir + HAIR_STYLES.length) % HAIR_STYLES.length;
+            } else if (category === 'face') {
+                targetApp.face = (targetApp.face + dir + FACE_EXPRESSIONS.length) % FACE_EXPRESSIONS.length;
+            } else if (category === 'acc') {
+                targetApp.acc = (targetApp.acc + dir + FACE_ACCESSORIES.length) % FACE_ACCESSORIES.length;
+            } else if (category === 'hat') {
+                targetApp.hat = (targetApp.hat + dir + HEAD_ACCESSORIES.length) % HEAD_ACCESSORIES.length;
+            }
+            syncAppearanceToPlayers();
+            updateCustomizationLabels();
+            playTone(480, 'sine', 0.05, 0.1);
+        }
+        window.cycleOption = cycleOption;
+
+        function randomizeAppearance() {
+            const targetApp = activeCustomTarget === 1 ? appearanceP1 : appearanceP2;
+            targetApp.skin = Math.floor(Math.random() * SKIN_TONES.length);
+            targetApp.hair = Math.floor(Math.random() * HAIR_STYLES.length);
+            targetApp.face = Math.floor(Math.random() * FACE_EXPRESSIONS.length);
+            targetApp.acc = Math.floor(Math.random() * FACE_ACCESSORIES.length);
+            targetApp.hat = Math.floor(Math.random() * HEAD_ACCESSORIES.length);
+            syncAppearanceToPlayers();
+            updateCustomizationLabels();
+            playTone(620, 'triangle', 0.08, 0.12);
+        }
+        window.randomizeAppearance = randomizeAppearance;
+
+        function syncAppearanceToPlayers() {
+            p1.appearance = { ...appearanceP1 };
+            p2.appearance = { ...appearanceP2 };
+        }
+
+        function updateCustomizationLabels() {
+            const targetApp = activeCustomTarget === 1 ? appearanceP1 : appearanceP2;
+            document.getElementById('label-hair').textContent = HAIR_STYLES[targetApp.hair].label;
+            document.getElementById('label-face').textContent = FACE_EXPRESSIONS[targetApp.face].label;
+            document.getElementById('label-acc').textContent = FACE_ACCESSORIES[targetApp.acc].label;
+            document.getElementById('label-hat').textContent = HEAD_ACCESSORIES[targetApp.hat].label;
+
+            const swatches = skinContainer.children;
+            for (let i = 0; i < swatches.length; i++) {
+                swatches[i].style.transform = i === targetApp.skin ? 'scale(1.18)' : 'scale(1)';
+                swatches[i].style.boxShadow = i === targetApp.skin ? '0 0 0 2px #facc15' : 'none';
+            }
+        }
+
+        const previewCanvas = document.getElementById('previewCanvas');
+        const previewCtx = previewCanvas.getContext('2d');
+        function renderCharacterPreview(timeSec = 0) {
+            if (!previewCtx) return;
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            const targetApp = activeCustomTarget === 1 ? appearanceP1 : appearanceP2;
+            const ringColor = activeCustomTarget === 1 ? '#f43f5e' : '#0ea5e9';
+            const facing = activeCustomTarget === 1 ? 1 : -1;
+
+            previewCtx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+            previewCtx.beginPath();
+            previewCtx.arc(90, 96, 68, 0, Math.PI * 2);
+            previewCtx.fill();
+
+            const bounceY = Math.sin(timeSec * 4.2) * 3.5;
+            const sx = 1 + Math.cos(timeSec * 4.2) * 0.03;
+            const sy = 1 - Math.cos(timeSec * 4.2) * 0.03;
+            const isBlinking = (timeSec % 3.2) > 3.05;
+
+            drawHumanHeadCharacter(previewCtx, 90, 98 + bounceY, 48, targetApp, facing, ringColor, {
+                isSmashing: false,
+                scaleX: sx,
+                scaleY: sy,
+                lookAngle: facing === 1 ? -0.15 : Math.PI + 0.15,
+                isBlinking,
+                dynamicExpr: null
+            });
+        }
+
+        let gameMode = 'BOT';
+        let botDifficulty = 'MEDIUM';
+        let isPaused = false;
+
+        function togglePause(pauseState) {
+            isPaused = pauseState;
+            const pauseOverlay = document.getElementById('pause-overlay');
+            if (isPaused) {
+                pauseOverlay.classList.remove('hidden');
+            } else {
+                pauseOverlay.classList.add('hidden');
+                lastTime = performance.now();
+            }
+            playTone(400, 'sine', 0.05, 0.1);
+        }
+        window.togglePause = togglePause;
+
+        function switchMenuMode(mode) {
+            initAudio();
+            document.getElementById('menu-view-main').classList.add('hidden');
+            if (mode === 'MABAR') {
+                document.getElementById('menu-view-mabar').classList.remove('hidden');
+            } else if (mode === 'BOT') {
+                document.getElementById('menu-view-bot').classList.remove('hidden');
+            }
+        }
+        window.switchMenuMode = switchMenuMode;
+
+        function backToMainMenu() {
+            document.getElementById('menu-view-mabar').classList.add('hidden');
+            document.getElementById('menu-view-bot').classList.add('hidden');
+            document.getElementById('menu-view-main').classList.remove('hidden');
+        }
+        window.backToMainMenu = backToMainMenu;
+
+        function openLobby(mode) {
+            gameMode = mode;
+            document.getElementById('menu-view-mabar').classList.add('hidden');
+            document.getElementById('menu-view-lobby').classList.remove('hidden');
+
+            const onlineBox = document.getElementById('online-room-section');
+            if (mode === 'ONLINE') {
+                onlineBox.classList.remove('hidden');
+                document.getElementById('label-p2-score').textContent = 'Pemain 2 (Online)';
+                initPeerConnection();
+            } else {
+                onlineBox.classList.add('hidden');
+                document.getElementById('label-p2-score').textContent = 'Pemain 2';
+            }
+            updateCustomizationLabels();
+        }
+        window.openLobby = openLobby;
+
+        function startBotGame(diff) {
+            gameMode = 'BOT';
+            botDifficulty = diff;
+            document.getElementById('menu-view-bot').classList.add('hidden');
+            document.getElementById('menu-view-lobby').classList.remove('hidden');
+            document.getElementById('online-room-section').classList.add('hidden');
+            document.getElementById('label-p2-score').textContent = `Bot (${diff})`;
+            updateCustomizationLabels();
+        }
+        window.startBotGame = startBotGame;
+
+        function backToMenuMode() {
+            document.getElementById('menu-view-lobby').classList.add('hidden');
+            if (gameMode === 'BOT') {
+                document.getElementById('menu-view-bot').classList.remove('hidden');
+            } else {
+                document.getElementById('menu-view-mabar').classList.remove('hidden');
+            }
+        }
+        window.backToMenuMode = backToMenuMode;
+
+        function startLobbyGame() {
+            document.getElementById('lobby-overlay').classList.add('hidden');
+            isPaused = false;
+            resetMatch();
+        }
+        window.startLobbyGame = startLobbyGame;
+
+        function returnToLobby() {
+            isPaused = false;
+            document.getElementById('pause-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            document.getElementById('lobby-overlay').classList.remove('hidden');
+            backToMainMenu();
+        }
+        window.returnToLobby = returnToLobby;
+
+        // PeerJS Setup
+        let peer = null;
+        let conn = null;
+        let isOnlineHost = false;
+        let onlineRoomCode = '';
+
+        function initPeerConnection() {
+            const statusEl = document.getElementById('peer-status');
+            statusEl.textContent = 'Menghubungkan ke PeerServer...';
+            try {
+                if (peer) { peer.destroy(); }
+                peer = new Peer();
+                peer.on('open', (id) => {
+                    statusEl.textContent = 'Siap membuat/bergabung room!';
+                });
+                peer.on('connection', (connection) => {
+                    conn = connection;
+                    isOnlineHost = true;
+                    setupPeerConnectionEvents();
+                    statusEl.textContent = 'Pemain 2 terhubung!';
+                });
+                peer.on('error', (err) => {
+                    statusEl.textContent = 'Gagal terhubung server peer.';
+                });
+            } catch (e) {
+                statusEl.textContent = 'Gagal inisialisasi peer.';
+            }
+        }
+
+        function hostOnlineRoom() {
+            if (!peer) return;
+            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+            onlineRoomCode = code;
+            isOnlineHost = true;
+            document.getElementById('my-room-code-box').classList.remove('hidden');
+            document.getElementById('display-room-code').textContent = code;
+            document.getElementById('peer-status').textContent = 'Menunggu Pemain 2 bergabung...';
+        }
+        window.hostOnlineRoom = hostOnlineRoom;
+
+        function joinOnlineRoom() {
+            const codeInput = document.getElementById('input-room-code').value.trim().toUpperCase();
+            if (!codeInput || !peer) return;
+            document.getElementById('peer-status').textContent = `Menghubungkan ke room ${codeInput}...`;
+            isOnlineHost = false;
+            conn = peer.connect('volinusantara-' + codeInput);
+            setupPeerConnectionEvents();
+        }
+        window.joinOnlineRoom = joinOnlineRoom;
+
+        function setupPeerConnectionEvents() {
+            if (!conn) return;
+            conn.on('open', () => {
+                document.getElementById('peer-status').textContent = 'Terhubung! Siap bermain.';
+                conn.send({ type: 'appearance', appearance: appearanceP1 });
+            });
+            conn.on('data', (data) => {
+                if (data.type === 'appearance') {
+                    p2.appearance = data.appearance;
+                } else if (data.type === 'input') {
+                    if (isOnlineHost) {
+                        p2.keys = data.keys;
+                    } else {
+                        p1.keys = data.keys;
+                    }
+                } else if (data.type === 'state' && !isOnlineHost) {
+                    ball.x = data.ball.x; ball.y = data.ball.y;
+                    ball.vx = data.ball.vx; ball.vy = data.ball.vy;
+                    p1.x = data.p1.x; p1.y = data.p1.y; p1.vy = data.p1.vy;
+                    p2.x = data.p2.x; data.p2.y; p2.vy = data.p2.vy;
+                    scoreP1 = data.scoreP1; scoreP2 = data.scoreP2;
+                }
+            });
+        }
+
+        // Canvas Setup & Gameplay Logic
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const WORLD_W = 1200;
+        const WORLD_H = 675;
+
+        let scoreP1 = 0;
+        let scoreP2 = 0;
+
+        class Player {
+            constructor(x, y, isLeft) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = 34;
+                this.isLeft = isLeft;
+                this.isGrounded = true;
+                this.facing = isLeft ? 1 : -1;
+                this.appearance = isLeft ? { ...appearanceP1 } : { ...appearanceP2 };
+                this.keys = { left: false, right: false, jump: false, smash: false, drop: false, defense: false };
+                this.squashX = 1;
+                this.squashY = 1;
+                this.isSmashing = false;
+                this.isDiving = false;
+                this.diveTimer = 0;
+            }
+
+            reset(startX, startY) {
+                this.x = startX;
+                this.y = startY;
+                this.vx = 0;
+                this.vy = 0;
+                this.isGrounded = true;
+                this.isSmashing = false;
+                this.isDiving = false;
+                this.diveTimer = 0;
+                this.squashX = 1;
+                this.squashY = 1;
+            }
+        }
+
+        class Ball {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = 18;
+                this.trail = [];
+            }
+
+            reset(serveToLeft = true) {
+                this.x = serveToLeft ? 320 : 880;
+                this.y = 220;
+                this.vx = (serveToLeft ? 1 : -1) * (2 + Math.random() * 2);
+                this.vy = -3;
+                this.trail = [];
+            }
+        }
+
+        const p1 = new Player(300, WORLD_H - 120, true);
+        const p2 = new Player(900, WORLD_H - 120, false);
+        const ball = new Ball(600, 220);
+
+        let particles = [];
+        function addParticles(x, y, color, count = 12) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 6;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color,
+                    alpha: 1,
+                    decay: 0.02 + Math.random() * 0.03,
+                    radius: 3 + Math.random() * 4
+                });
+            }
+        }
+
+        // Input Listeners with Shift-key smash support
+        const activeKeys = {};
+        window.addEventListener('keydown', (e) => {
+            activeKeys[e.code] = true;
+            if (e.code === 'KeyW' || e.code === 'ArrowUp') initAudio();
+            if (e.code === 'Escape') {
+                togglePause(!isPaused);
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            activeKeys[e.code] = false;
+        });
+
+        function touchDown(action) {
+            initAudio();
+            if (action === 'left') p1.keys.left = true;
+            if (action === 'right') p1.keys.right = true;
+            if (action === 'jump') p1.keys.jump = true;
+            if (action === 'smash') p1.keys.smash = true;
+            if (action === 'drop') p1.keys.drop = true;
+            if (action === 'defense') p1.keys.defense = true;
+        }
+        window.touchDown = touchDown;
+
+        function touchUp(action) {
+            if (action === 'left') p1.keys.left = false;
+            if (action === 'right') p1.keys.right = false;
+            if (action === 'jump') p1.keys.jump = false;
+            if (action === 'smash') p1.keys.smash = false;
+            if (action === 'drop') p1.keys.drop = false;
+            if (action === 'defense') p1.keys.defense = false;
+        }
+        window.touchUp = touchUp;
+
+        function updatePlayerInputs() {
+            // Pemilik 1 (WASD + Shift for Smash)
+            p1.keys.left = activeKeys['KeyA'] || activeKeys['ArrowLeft'] || p1.keys.left;
+            p1.keys.right = activeKeys['KeyD'] || activeKeys['ArrowRight'] || p1.keys.right;
+            p1.keys.jump = activeKeys['KeyW'] || activeKeys['ArrowUp'] || p1.keys.jump;
+            p1.keys.smash = activeKeys['ShiftLeft'] || activeKeys['ShiftRight'] || activeKeys['KeyS'] || p1.keys.smash;
+            p1.keys.drop = activeKeys['KeyX'] || p1.keys.drop;
+            p1.keys.defense = activeKeys['KeyC'] || p1.keys.defense;
+
+            if (gameMode === 'LOCAL') {
+                // Pemilik 2 (Arrow Keys + Right Shift for Smash)
+                p2.keys.left = activeKeys['ArrowLeft'];
+                p2.keys.right = activeKeys['ArrowRight'];
+                p2.keys.jump = activeKeys['ArrowUp'];
+                p2.keys.smash = activeKeys['ShiftRight'] || activeKeys['ArrowDown'];
+                p2.keys.drop = activeKeys['KeyM'];
+                p2.keys.defense = activeKeys['KeyN'];
+            } else if (gameMode === 'ONLINE' && conn) {
+                conn.send({
+                    type: 'input',
+                    keys: { left: p1.keys.left, right: p1.keys.right, jump: p1.keys.jump, smash: p1.keys.smash, drop: p1.keys.drop, defense: p1.keys.defense }
+                });
+            } else if (gameMode === 'BOT') {
+                updateBotAI();
+            }
+        }
+
+        function updateBotAI() {
+            let targetX = 900;
+            let reactionSpeed = 0.08;
+
+            if (botDifficulty === 'EASY') {
+                reactionSpeed = 0.04;
+                targetX = 850 + Math.sin(Date.now() * 0.002) * 120;
+            } else if (botDifficulty === 'MEDIUM') {
+                reactionSpeed = 0.09;
+                targetX = ball.x > 600 ? ball.x : 850;
+            } else if (botDifficulty === 'HARD') {
+                reactionSpeed = 0.18;
+                targetX = ball.x > 580 ? ball.x + (ball.vx * 5) : 880;
+            }
+
+            p2.keys.left = p2.x > targetX + 15;
+            p2.keys.right = p2.x < targetX - 15;
+
+            // Loncat bot saat bola mendekati area dan tinggi
+            if (ball.x > 620 && ball.x < 1100 && ball.y < 380 && ball.vy < 2 && p2.isGrounded && Math.abs(p2.x - ball.x) < 120) {
+                p2.keys.jump = true;
+                p2.keys.smash = botDifficulty !== 'EASY' && Math.random() < 0.75;
+            } else {
+                p2.keys.jump = false;
+                p2.keys.smash = false;
+            }
+        }
+
+        function updatePlayerMovement(p, minX, maxX, dt) {
+            const gravity = 0.55;
+            const moveSpeed = 5.2;
+
+            if (p.isDiving) {
+                p.diveTimer--;
+                p.x += p.facing * 9;
+                if (p.diveTimer <= 0) p.isDiving = false;
+            } else {
+                if (p.keys.left) {
+                    p.vx = -moveSpeed;
+                    p.facing = -1;
+                } else if (p.keys.right) {
+                    p.vx = moveSpeed;
+                    p.facing = 1;
+                } else {
+                    p.vx *= 0.75;
+                }
+
+                if (p.keys.jump && p.isGrounded) {
+                    p.vy = -13.5;
+                    p.isGrounded = false;
+                    p.squashX = 0.75;
+                    p.squashY = 1.35;
+                    emitOnlineSfx('jump');
+                }
+
+                if (p.keys.defense && p.isGrounded && !p.isDiving) {
+                    p.isDiving = true;
+                    p.diveTimer = 22;
+                }
+            }
+
+            p.vy += gravity;
+            p.x += p.vx;
+            p.y += p.vy;
+
+            // Batas lantai
+            const floorY = WORLD_H - 75;
+            if (p.y + p.radius >= floorY) {
+                p.y = floorY - p.radius;
+                if (!p.isGrounded) {
+                    p.squashX = 1.25;
+                    p.squashY = 0.75;
+                }
+                p.vy = 0;
+                p.isGrounded = true;
+            }
+
+            // Pemulihan efek squash & stretch
+            p.squashX += (1 - p.squashX) * 0.15;
+            p.squashY += (1 - p.squashY) * 0.15;
+
+            // Batas area lapangan
+            if (p.x < minX) { p.x = minX; p.vx = 0; }
+            if (p.x > maxX) { p.x = maxX; p.vx = 0; }
+        }
+
+        function updateBall() {
+            const gravity = 0.38;
+            ball.vy += gravity;
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            // Simpan jejak bola
+            if (Math.random() < 0.5) {
+                ball.trail.push({ x: ball.x, y: ball.y });
+                if (ball.trail.length > 8) ball.trail.shift();
+            }
+
+            // Dinding kiri & kanan
+            if (ball.x - ball.radius <= 40) {
+                ball.x = 40 + ball.radius;
+                ball.vx *= -0.8;
+                emitOnlineSfx('hit');
+            }
+            if (ball.x + ball.radius >= WORLD_W - 40) {
+                ball.x = WORLD_W - 40 - ball.radius;
+                ball.vx *= -0.8;
+                emitOnlineSfx('hit');
+            }
+
+            // Atap atas
+            if (ball.y - ball.radius <= 40) {
+                ball.y = 40 + ball.radius;
+                ball.vy *= -0.8;
+                emitOnlineSfx('hit');
+            }
+
+            // Net Voli (Tengah)
+            const netX = WORLD_W / 2;
+            const netTop = WORLD_H - 240;
+            const netBottom = WORLD_H - 75;
+            const netWidth = 16;
+
+            if (ball.x + ball.radius > netX - netWidth / 2 && ball.x - ball.radius < netX + netWidth / 2) {
+                if (ball.y + ball.radius >= netTop) {
+                    if (ball.y < netTop + 20) {
+                        ball.y = netTop - ball.radius;
+                        ball.vy *= -0.75;
+                        ball.vx *= 0.8;
+                    } else {
+                        if (ball.x < netX) {
+                            ball.x = netX - netWidth / 2 - ball.radius;
+                            ball.vx *= -0.8;
+                        } else {
+                            ball.x = netX + netWidth / 2 + ball.radius;
+                            ball.vx *= -0.8;
+                        }
+                    }
+                    emitOnlineSfx('hit');
+                }
+            }
+
+            // Cek Tabrakan dengan Pemain
+            checkPlayerBallCollision(p1);
+            checkPlayerBallCollision(p2);
+
+            // Cek Bola Menyentuh Tanah (Skor)
+            if (ball.y + ball.radius >= WORLD_H - 75) {
+                addParticles(ball.x, WORLD_H - 75, '#f59e0b', 18);
+                emitOnlineSfx('score');
+                if (ball.x < WORLD_W / 2) {
+                    scoreP2++;
+                    checkWinCondition();
+                    ball.reset(false);
+                } else {
+                    scoreP1++;
+                    checkWinCondition();
+                    ball.reset(true);
+                }
+            }
+        }
+
+        function checkPlayerBallCollision(p) {
+            const dx = ball.x - p.x;
+            const dy = ball.y - p.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const minDist = ball.radius + p.radius;
+
+            if (dist < minDist) {
+                const overlap = minDist - dist;
+                const angle = Math.atan2(dy, dx);
+                ball.x += Math.cos(angle) * overlap;
+                ball.y += Math.sin(angle) * overlap;
+
+                let hitSpeed = 7 + Math.sqrt(p.vx * p.vx + p.vy * p.vy) * 0.4;
+                let isSmashHit = p.keys.smash;
+                let isDropHit = p.keys.drop;
+
+                if (isSmashHit) {
+                    hitSpeed *= 1.85;
+                    ball.vx = Math.cos(angle) * hitSpeed + (p.facing * 5);
+                    ball.vy = Math.sin(angle) * hitSpeed - 8;
+                    addParticles(ball.x, ball.y, '#ef4444', 16);
+                    emitOnlineSfx('smash');
+                } else if (isDropHit) {
+                    ball.vx = p.facing * 2.5;
+                    ball.vy = -3.5;
+                    emitOnlineSfx('hit');
+                } else {
+                    ball.vx = Math.cos(angle) * hitSpeed + (p.vx * 0.6);
+                    ball.vy = Math.sin(angle) * hitSpeed - 3;
+                    emitOnlineSfx('hit');
+                }
+
+                p.squashX = 1.35;
+                p.squashY = 0.7;
+            }
+        }
+
+        function checkWinCondition() {
+            document.getElementById('score-p1').textContent = scoreP1;
+            document.getElementById('score-p2').textContent = scoreP2;
+
+            if (scoreP1 >= 5 || scoreP2 >= 5) {
+                isPaused = true;
+                const winTitle = document.getElementById('gameover-title');
+                const winDesc = document.getElementById('gameover-desc');
+                if (scoreP1 >= 5) {
+                    winTitle.textContent = 'PEMAIN 1 MENANG!';
+                    winDesc.textContent = 'Hebat! Pemain 1 mendominasi jalannya pertandingan.';
+                } else {
+                    winTitle.textContent = gameMode === 'BOT' ? 'BOT AI MENANG!' : 'PEMAIN 2 MENANG!';
+                    winDesc.textContent = 'Pertandingan yang sengit, coba lagi di ronde berikutnya!';
+                }
+                document.getElementById('gameover-overlay').classList.remove('hidden');
+                emitOnlineSfx('win');
+            }
+        }
+
+        function resetMatch() {
+            scoreP1 = 0;
+            scoreP2 = 0;
+            document.getElementById('score-p1').textContent = '0';
+            document.getElementById('score-p2').textContent = '0';
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            p1.reset(300, WORLD_H - 120);
+            p2.reset(900, WORLD_H - 120);
+            ball.reset(Math.random() < 0.5);
+        }
+        window.restartMatch = function() {
+            document.getElementById('pause-overlay').classList.add('hidden');
+            resetMatch();
+            isPaused = false;
+        };
+
+        // Render Manusia Kepala Karakter Lengkap
+        function drawHumanHeadCharacter(ctx, x, y, radius, app, facing, ringColor, state) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(state.scaleX || 1, state.scaleY || 1);
+
+            // Ring Indikator Pemain di Bawah
+            ctx.fillStyle = ringColor;
+            ctx.beginPath();
+            ctx.ellipse(0, radius + 12, 24, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            const skin = SKIN_TONES[app.skin] || SKIN_TONES[0];
+            const hair = HAIR_STYLES[app.hair] || HAIR_STYLES[0];
+
+            // Bayangan Kepala
+            ctx.fillStyle = 'rgba(0,0,0,0.18)';
+            ctx.beginPath();
+            ctx.arc(4, 4, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Bentuk Kepala Utama
+            ctx.fillStyle = skin.fill;
+            ctx.strokeStyle = skin.stroke;
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Gaya Rambut
+            ctx.fillStyle = hair.color;
+            if (hair.id === 'spiky') {
+                ctx.beginPath();
+                ctx.moveTo(-radius * 0.8, -radius * 0.3);
+                ctx.lineTo(-radius * 1.1, -radius * 1.1);
+                ctx.lineTo(-radius * 0.2, -radius * 0.9);
+                ctx.lineTo(0, -radius * 1.25);
+                ctx.lineTo(radius * 0.4, -radius * 0.95);
+                ctx.lineTo(radius * 0.9, -radius * 0.8);
+                ctx.closePath();
+                ctx.fill();
+            } else if (hair.id === 'parted') {
+                ctx.beginPath();
+                ctx.arc(0, -radius * 0.1, radius * 0.98, Math.PI, Math.PI * 2);
+                ctx.fill();
+            } else if (hair.id === 'afro') {
+                ctx.beginPath();
+                ctx.arc(0, -radius * 0.3, radius * 1.15, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (hair.id === 'ponytail') {
+                ctx.beginPath();
+                ctx.arc(0, -radius * 0.2, radius * 1.02, Math.PI, Math.PI * 2);
+                ctx.fill();
+                ctx.fillRect(facing * (radius * 0.75), -radius * 0.2, 16, 22);
+            } else if (hair.id === 'mohawk') {
+                ctx.fillRect(-8, -radius * 1.35, 16, radius * 0.9);
+            }
+
+            // Aksesoris Kepala / Topi
+            const hat = HEAD_ACCESSORIES[app.hat] || HEAD_ACCESSORIES[0];
+            if (hat.id === 'cap') {
+                ctx.fillStyle = '#f43f5e';
+                ctx.beginPath();
+                ctx.arc(0, -radius * 0.3, radius * 0.95, Math.PI, Math.PI * 2);
+                ctx.fill();
+                ctx.fillRect(facing > 0 ? 0 : -radius * 1.1, -radius * 0.4, radius * 1.1, 8);
+            } else if (hat.id === 'headband') {
+                ctx.fillStyle = '#eab308';
+                ctx.fillRect(-radius, -8, radius * 2, 10);
+            } else if (hat.id === 'crown') {
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath();
+                ctx.moveTo(-22, -radius * 0.8);
+                ctx.lineTo(-26, -radius * 1.3);
+                ctx.lineTo(-10, -radius * 0.9);
+                ctx.lineTo(0, -radius * 1.4);
+                ctx.lineTo(10, -radius * 0.9);
+                ctx.lineTo(26, -radius * 1.3);
+                ctx.lineTo(22, -radius * 0.8);
+                ctx.closePath();
+                ctx.fill();
+            } else if (hat.id === 'bandana') {
+                ctx.fillStyle = '#06b6d4';
+                ctx.fillRect(-radius * 0.95, -radius * 0.35, radius * 1.9, 14);
+            }
+
+            // Mata & Pupil (Mengikuti Arah Bola)
+            const eyeOffsetX = facing * 10;
+            const lookA = state.lookAngle || 0;
+            const pupilX = eyeOffsetX + Math.cos(lookA) * 3.5;
+            const pupilY = Math.sin(lookA) * 3.5;
+
+            if (!state.isBlinking) {
+                // Mata Kiri & Kanan
+                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(eyeOffsetX - 10, -4, 8, 0, Math.PI * 2);
+                ctx.arc(eyeOffsetX + 10, -4, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Pupil Hitam
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.arc(eyeOffsetX - 10 + pupilX * 0.4, -4 + pupilY * 0.4, 3.5, 0, Math.PI * 2);
+                ctx.arc(eyeOffsetX + 10 + pupilX * 0.4, -4 + pupilY * 0.4, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // Berkedip
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(eyeOffsetX - 16, -4); ctx.lineTo(eyeOffsetX - 4, -4);
+                ctx.moveTo(eyeOffsetX + 4, -4); ctx.lineTo(eyeOffsetX + 16, -4);
+                ctx.stroke();
+            }
+
+            // Ekspresi Wajah
+            const faceExpr = FACE_EXPRESSIONS[app.face] || FACE_EXPRESSIONS[0];
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            if (faceExpr.id === 'happy' || state.isSmashing) {
+                ctx.arc(eyeOffsetX, 14, 10, 0, Math.PI, false);
+                ctx.stroke();
+            } else if (faceExpr.id === 'fierce') {
+                ctx.moveTo(eyeOffsetX - 12, 16);
+                ctx.lineTo(eyeOffsetX + 12, 12);
+                ctx.stroke();
+            } else if (faceExpr.id === 'chill') {
+                ctx.moveTo(eyeOffsetX - 8, 14);
+                ctx.lineTo(eyeOffsetX + 8, 14);
+                ctx.stroke();
+            } else if (faceExpr.id === 'shocked') {
+                ctx.arc(eyeOffsetX, 16, 6, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Aksesoris Wajah
+            const acc = FACE_ACCESSORIES[app.acc] || FACE_ACCESSORIES[0];
+            if (acc.id === 'shades') {
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(eyeOffsetX - 18, -10, 36, 12);
+            } else if (acc.id === 'glasses') {
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(eyeOffsetX - 18, -10, 14, 12);
+                ctx.strokeRect(eyeOffsetX + 4, -10, 14, 12);
+            } else if (acc.id === 'bandaid') {
+                ctx.fillStyle = '#fde68a';
+                ctx.fillRect(eyeOffsetX + 12, 2, 12, 7);
+            } else if (acc.id === 'mustache') {
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.ellipse(eyeOffsetX, 20, 14, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (acc.id === 'mask') {
+                ctx.fillStyle = '#3b82f6';
+                ctx.fillRect(eyeOffsetX - 20, 2, 40, 18);
+            } else if (acc.id === 'facepaint') {
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(eyeOffsetX - 18, -8, 8, 8);
+                ctx.fillRect(eyeOffsetX + 10, -8, 8, 8);
+            }
+
+            ctx.restore();
+        }
+
+        // Render Arena Game Utama
+        let lastTime = performance.now();
+        function gameLoop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            // Render Preview di Lobby
+            renderCharacterPreview(timestamp / 1000);
+
+            if (!isPaused && document.getElementById('lobby-overlay').classList.contains('hidden')) {
+                updatePlayerInputs();
+                updatePlayerMovement(p1, 50, WORLD_W / 2 - 40, dt);
+                updatePlayerMovement(p2, WORLD_W / 2 + 40, WORLD_W - 50, dt);
+                updateBall();
+
+                // Update Partikel
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    let pt = particles[i];
+                    pt.x += pt.vx;
+                    pt.y += pt.vy;
+                    pt.alpha -= pt.decay;
+                    if (pt.alpha <= 0) particles.splice(i, 1);
+                }
+            }
+
+            // Gambar Kanvas Game
+            renderGameScene();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function renderGameScene() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+
+            const scaleX = canvas.width / WORLD_W;
+            const scaleY = canvas.height / WORLD_H;
+
+            ctx.save();
+            ctx.scale(scaleX, scaleY);
+
+            // Latar Belakang Gradien Tropis
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, WORLD_H);
+            bgGrad.addColorStop(0, '#0284c7');
+            bgGrad.addColorStop(0.6, '#38bdf8');
+            bgGrad.addColorStop(1, '#fef08a');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+            // Matahari Tropis
+            ctx.fillStyle = 'rgba(254, 240, 138, 0.4)';
+            ctx.beginPath();
+            ctx.arc(WORLD_W - 150, 120, 70, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pasir Pantai & Garis Lapangan
+            ctx.fillStyle = '#fde047';
+            ctx.fillRect(0, WORLD_H - 75, WORLD_W, 75);
+            ctx.fillStyle = '#ca8a04';
+            ctx.fillRect(0, WORLD_H - 75, WORLD_W, 8);
+
+            // Garis Tepi Lapangan
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(50, WORLD_H - 75); ctx.lineTo(WORLD_W - 50, WORLD_H - 75);
+            ctx.moveTo(50, WORLD_H - 75); ctx.lineTo(50, WORLD_H - 180);
+            ctx.moveTo(WORLD_W - 50, WORLD_H - 75); ctx.lineTo(WORLD_W - 50, WORLD_H - 180);
+            ctx.stroke();
+
+            // Net Voli Tengah
+            const netX = WORLD_W / 2;
+            const netTop = WORLD_H - 240;
+            const netBottom = WORLD_H - 75;
+
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(netX - 8, netTop, 16, netBottom - netTop);
+
+            // Pola Jaring Net
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1.5;
+            for (let ny = netTop + 10; ny < netBottom; ny += 16) {
+                ctx.beginPath();
+                ctx.moveTo(netX - 8, ny); ctx.lineTo(netX + 8, ny);
+                ctx.stroke();
+            }
+
+            // Tiang Net Atas
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(netX - 10, netTop - 12, 20, 12);
+
+            // Gambar Partikel
+            particles.forEach(pt => {
+                ctx.save();
+                ctx.globalAlpha = pt.alpha;
+                ctx.fillStyle = pt.color;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Hitung Sudut Pandang Lirikan Mata Pemain ke Bola
+            const lookP1 = Math.atan2(ball.y - p1.y, ball.x - p1.x);
+            const lookP2 = Math.atan2(ball.y - p2.y, ball.x - p2.x);
+
+            // Gambar Karakter Pemain 1
+            drawHumanHeadCharacter(ctx, p1.x, p1.y, p1.radius, p1.appearance, p1.facing, '#f43f5e', {
+                scaleX: p1.squashX,
+                scaleY: p1.squashY,
+                lookAngle: lookP1,
+                isBlinking: (Date.now() % 3500) < 150
+            });
+
+            // Gambar Karakter Pemain 2 / Bot
+            drawHumanHeadCharacter(ctx, p2.x, p2.y, p2.radius, p2.appearance, p2.facing, '#0ea5e9', {
+                scaleX: p2.squashX,
+                scaleY: p2.squashY,
+                lookAngle: lookP2,
+                isBlinking: (Date.now() % 4100) < 150
+            });
+
+            // Gambar Jejak Bola (Trail)
+            ball.trail.forEach((t, idx) => {
+                ctx.fillStyle = `rgba(255, 255, 255, ${idx * 0.08})`;
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, ball.radius * (idx / 10), 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Gambar Bola Voli
+            ctx.fillStyle = '#f8fafc';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Garis Corak Bola Voli Klasik
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(ball.x - 4, ball.y - 4, ball.radius * 0.7, 0.2, Math.PI * 0.8);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Mulai Animasi Loop
+        window.onload = function() {
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
